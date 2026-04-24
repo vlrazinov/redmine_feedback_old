@@ -79,12 +79,20 @@ module RedmineFeedback
       comment ||= feedback&.vote_comment if feedback
       
       # Формируем tooltip с комментарием
+      comment_html = ''
       if comment.present?
         # Очищаем комментарий от переносов строк и экранируем спецсимволы для HTML атрибута
         tooltip_text = comment.to_s.gsub("\n", ' ').gsub("\r", ' ').gsub('"', '&quot;').gsub("'", '&#39;')
         tooltip = "#{I18n.t(:label_comment)}: #{tooltip_text}"
         title_attr = "title=\"#{tooltip}\""
         style_attr = "style=\"cursor: help; text-decoration: underline dotted;\""
+        escaped_comment = ERB::Util.html_escape(comment.to_s).gsub("\n", '<br>').html_safe
+        comment_html = <<-HTML
+          <div class="feedback-comment" style="margin-top: 6px; color: #333; font-size: 0.95em;">
+            <strong>#{I18n.t(:label_comment)}:</strong>
+            <span>#{escaped_comment}</span>
+          </div>
+        HTML
       else
         title_attr = ""
         style_attr = ""
@@ -96,6 +104,7 @@ module RedmineFeedback
           <span class="feedback-rating feedback-#{rating}" #{style_attr} #{title_attr}>
             #{rating_text}
           </span>
+          #{comment_html}
         </div>
       HTML
       
