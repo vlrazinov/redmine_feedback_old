@@ -1,7 +1,8 @@
 module RedmineFeedback
   class Hooks < Redmine::Hook::ViewListener
     def view_layouts_base_html_head(context)
-      stylesheet_link_tag('feedback', :plugin => 'redmine_feedback')
+      stylesheet_link_tag('feedback', :plugin => 'redmine_feedback') +
+        javascript_include_tag('feedback', :plugin => 'redmine_feedback')
     end
     
     # Этот хук вызывается при отображении значений кастомных полей
@@ -32,15 +33,8 @@ module RedmineFeedback
       custom_value = issue.custom_value_for(feedback_field_id)
       rating = custom_value&.value
       return '' unless rating.present?
-      
-      html = <<-HTML
-        <div class="feedback-info">
-          <strong>#{ERB::Util.html_escape(I18n.t(:label_feedback_title))}:</strong>
-          #{rating_html(issue, rating)}
-        </div>
-      HTML
-      
-      html.html_safe
+
+      decorate_rating_field_script(issue, feedback_field_id, rating)
     end
 
     private
@@ -94,6 +88,29 @@ module RedmineFeedback
       end
 
       Feedback.find_by(issue_id: issue.id)&.vote_comment
+    end
+
+    def decorate_rating_field_script(issue, feedback_field_id, rating)
+      comment = feedback_comment_for(issue).to_s.squish
+      title = comment.present? ? "#{I18n.t(:label_comment)}: #{comment}" : ''
+      selector = ".cf_#{feedback_field_id.to_i} .value"
+
+      script = <<~JAVASCRIPT
+        document.addEventListener('DOMContentLoaded', function() {
+          var ratingValue = document.querySelector(#{selector.to_json});
+          if (!ratingValue) return;
+
+          ratingValue.textContent = #{rating_text_for(rating).to_json};
+          ratingValue.classList.add('feedback-rating-field', 'feedback-#{rating_css_class(rating)}');
+
+          if (#{comment.present?.to_json}) {
+            ratingValue.setAttribute('title', #{title.to_json});
+            ratingValue.setAttribute('data-feedback-tooltip', 'true');
+          }
+        });
+      JAVASCRIPT
+
+      javascript_tag(script)
     end
   end
 end

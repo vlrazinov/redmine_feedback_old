@@ -37,16 +37,36 @@ Rails.configuration.to_prepare do
       # Проверяем и создаём поле для оценки
       field_id = Setting.plugin_redmine_feedback['feedback_custom_field_id']
       
-      unless field_id.present? && IssueCustomField.find_by(id: field_id)&.name == 'Оценка поддержки'
+      rating_values = ['Хорошо', 'Нормально', 'Плохо']
+
+      if field_id.present? && (configured_field = IssueCustomField.find_by(id: field_id))&.name == 'Оценка поддержки'
+        configured_field.update!(
+          field_format: 'list',
+          possible_values: rating_values,
+          is_filter: true,
+          is_for_all: true,
+          visible: true,
+          trackers: Tracker.all
+        )
+      else
         existing_field = IssueCustomField.find_by(name: 'Оценка поддержки')
         if existing_field
+          existing_field.update!(
+            field_format: 'list',
+            possible_values: rating_values,
+            is_filter: true,
+            is_for_all: true,
+            visible: true,
+            trackers: Tracker.all
+          )
           Setting.plugin_redmine_feedback = Setting.plugin_redmine_feedback.merge(
             'feedback_custom_field_id' => existing_field.id.to_s
           )
         else
           field = IssueCustomField.create!(
             name: 'Оценка поддержки',
-            field_format: 'string',
+            field_format: 'list',
+            possible_values: rating_values,
             is_for_all: true,
             is_filter: true,
             editable: true,
@@ -62,9 +82,22 @@ Rails.configuration.to_prepare do
       # Проверяем и создаём поле для комментария
       comment_field_id = Setting.plugin_redmine_feedback['feedback_comment_custom_field_id']
       
-      unless comment_field_id.present? && IssueCustomField.find_by(id: comment_field_id)&.name == 'Комментарий к оценке поддержки'
+      if comment_field_id.present? && (configured_comment_field = IssueCustomField.find_by(id: comment_field_id))&.name == 'Комментарий к оценке поддержки'
+        configured_comment_field.update!(
+          is_filter: true,
+          is_for_all: true,
+          visible: true,
+          trackers: Tracker.all
+        )
+      else
         existing_comment_field = IssueCustomField.find_by(name: 'Комментарий к оценке поддержки')
         if existing_comment_field
+          existing_comment_field.update!(
+            is_filter: true,
+            is_for_all: true,
+            visible: true,
+            trackers: Tracker.all
+          )
           Setting.plugin_redmine_feedback = Setting.plugin_redmine_feedback.merge(
             'feedback_comment_custom_field_id' => existing_comment_field.id.to_s
           )

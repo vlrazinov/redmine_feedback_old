@@ -9,7 +9,8 @@ namespace :redmine_feedback do
     if field.nil?
       field = IssueCustomField.new(
         name: 'Оценка поддержки',
-        field_format: 'string',
+        field_format: 'list',
+        possible_values: ['Хорошо', 'Нормально', 'Плохо'],
         is_for_all: true,
         is_filter: true,
         editable: true,
@@ -26,6 +27,14 @@ namespace :redmine_feedback do
         puts "Error creating custom field: #{field.errors.full_messages.join(', ')}"
       end
     else
+      field.update!(
+        field_format: 'list',
+        possible_values: ['Хорошо', 'Нормально', 'Плохо'],
+        is_for_all: true,
+        is_filter: true,
+        visible: true,
+        trackers: Tracker.all
+      )
       puts "Custom field 'Оценка поддержки' already exists with ID: #{field.id}"
       Setting.plugin_redmine_feedback['feedback_custom_field_id'] = field.id
     end

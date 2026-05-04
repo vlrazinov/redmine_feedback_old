@@ -6,6 +6,26 @@ class Feedback < ApplicationRecord
   VOTE_NOTGOOD = 0
   VOTE_JUSTOK = 1
   VOTE_AWESOME = 2
+
+  RATING_VALUES = {
+    'good' => 'Хорошо',
+    'okay' => 'Нормально',
+    'bad' => 'Плохо'
+  }.freeze
+
+  VOTE_VALUES = {
+    'good' => VOTE_AWESOME,
+    'okay' => VOTE_JUSTOK,
+    'bad' => VOTE_NOTGOOD
+  }.freeze
+
+  def self.rating_value_for(value)
+    RATING_VALUES[value.to_s] || value
+  end
+
+  def self.vote_value_for(value)
+    VOTE_VALUES[value.to_s]
+  end
   
   # Виртуальное поле для получения значения оценки из кастомного поля задачи
   def rating_value
@@ -29,28 +49,9 @@ class Feedback < ApplicationRecord
     end
   end
   
-  # Обновление голоса с комментарием
+  # Обновление голоса с комментарием. История пользовательских полей задачи
+  # ведется стандартным журналом Redmine при сохранении Issue.
   def update_vote!(new_vote, comment = nil)
-    old_vote = vote
-    old_vote_comment = vote_comment
-    
-    return unless update vote: new_vote, vote_comment: comment
-    return if old_vote == vote && old_vote_comment == vote_comment
-    
-    # Создаем запись в журнале задачи
-    journal = Journal.new journalized: issue, user: User.current
-    if old_vote != vote
-      journal.details << JournalDetail.new(property: 'attr',
-                                           prop_key: 'vote',
-                                           old_value: old_vote,
-                                           value: vote)
-    end
-    if old_vote_comment != vote_comment
-      journal.details << JournalDetail.new(property: 'attr',
-                                           prop_key: 'vote_comment',
-                                           old_value: old_vote_comment,
-                                           value: vote_comment)
-    end
-    journal.save!
+    update!(vote: new_vote, vote_comment: comment)
   end
 end

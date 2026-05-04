@@ -1,7 +1,8 @@
 module RedmineFeedback
   class Hooks < Redmine::Hook::ViewListener
     def view_layouts_base_html_head(context)
-      stylesheet_link_tag('feedback', :plugin => 'redmine_feedback')
+      stylesheet_link_tag('feedback', :plugin => 'redmine_feedback') +
+        javascript_include_tag('feedback', :plugin => 'redmine_feedback')
     end
     
     # Этот хук вызывается при отображении значений кастомных полей
@@ -19,34 +20,7 @@ module RedmineFeedback
       custom_value = issue.custom_values.detect { |v| v.custom_field_id.to_s == feedback_field_id.to_s }
       return '' unless custom_value.present?
       
-      rating = custom_value.value
-      return '' unless rating.present?
-      
-      rating_text = case rating
-                    when 'good', 'Хорошо' then I18n.t(:label_good)
-                    when 'okay', 'Нормально' then I18n.t(:label_okay)
-                    when 'bad', 'Плохо' then I18n.t(:label_bad)
-                    else rating.to_s
-                    end
-      
-      # Получаем комментарий из custom field
-      comment_custom_field_id = Setting.plugin_redmine_feedback['feedback_comment_custom_field_id']
-      comment = nil
-      if comment_custom_field_id.present?
-        comment_value = issue.custom_values.detect { |v| v.custom_field_id.to_s == comment_custom_field_id.to_s }
-        comment = comment_value&.value
-      end
-      # Fallback to feedback model
-      feedback = Feedback.find_by(issue_id: issue.id)
-      comment ||= feedback&.vote_comment if feedback
-      
-      # Формируем tooltip с комментарием - всегда показываем, даже если комментария нет
-      tooltip_text = comment.present? ? comment.to_s.gsub("\n", ' ').gsub("\r", ' ').gsub('"', '&quot;').gsub("'", '&#39;') : ''
-      tooltip = "#{I18n.t(:label_comment)}: #{tooltip_text}"
-      
-      # Возвращаем HTML с подсказкой - оборачиваем в span с title
-      html = "<span class=\"feedback-rating-tooltip\" title=\"#{tooltip}\" style=\"cursor: help; text-decoration: underline dotted;\" data-comment=\"#{tooltip_text}\">#{rating_text}</span>"
-      return html.html_safe
+      rating_html(issue, custom_value.value)
     end
     
     def view_issues_show_details_bottom(context = {})
@@ -60,46 +34,82 @@ module RedmineFeedback
       rating = custom_value&.value
       return '' unless rating.present?
       
-      rating_text = case rating
-                    when 'good', 'Хорошо' then I18n.t(:label_good)
-                    when 'okay', 'Нормально' then I18n.t(:label_okay)
-                    when 'bad', 'Плохо' then I18n.t(:label_bad)
-                    else rating.to_s
-                    end
-      
-      # Получаем комментарий из custom field
-      comment_custom_field_id = Setting.plugin_redmine_feedback['feedback_comment_custom_field_id']
-      comment = nil
-      if comment_custom_field_id.present?
-        comment_value = issue.custom_values.detect { |v| v.custom_field_id.to_s == comment_custom_field_id.to_s }
-        comment = comment_value&.value
-      end
-      # Fallback to feedback model
-      feedback = Feedback.find_by(issue_id: issue.id)
-      comment ||= feedback&.vote_comment if feedback
-      
-      # Формируем tooltip с комментарием
+      decorate_rating_field_script(issue, feedback_field_id, rating)
+    end
+
+    private
+
+    def rating_html(issue, rating)
+      return ''.html_safe unless rating.present?
+
+      rating_text = rating_text_for(rating)
+      comment = feedback_comment_for(issue)
+      css_class = "feedback-rating feedback-#{rating_css_class(rating)}"
+
       if comment.present?
-        # Очищаем комментарий от переносов строк и экранируем спецсимволы для HTML атрибута
-        tooltip_text = comment.to_s.gsub("\n", ' ').gsub("\r", ' ').gsub('"', '&quot;').gsub("'", '&#39;')
-        tooltip = "#{I18n.t(:label_comment)}: #{tooltip_text}"
-        title_attr = "title=\"#{tooltip}\""
-        style_attr = "style=\"cursor: help; text-decoration: underline dotted;\""
+        tag_options = {
+          class: css_class,
+          title: "#{I18n.t(:label_comment)}: #{comment.to_s.squish}",
+          data: { feedback_tooltip: true }
+        }
       else
-        title_attr = ""
-        style_attr = ""
+        tag_options = { class: css_class }
       end
-      
-      html = <<-HTML
-        <div class="feedback-info" style="margin-top: 10px;">
-          <strong>⭐ Оценка поддержки:</strong>
-          <span class="feedback-rating feedback-#{rating}" #{style_attr} #{title_attr}>
-            #{rating_text}
-          </span>
-        </div>
-      HTML
-      
-      html.html_safe
+
+      content_tag(:span, rating_text, tag_options)
+    end
+
+    def rating_text_for(rating)
+      case rating
+      when 'good', 'Хорошо' then I18n.t(:label_good)
+      when 'okay', 'Нормально' then I18n.t(:label_okay)
+      when 'bad', 'Плохо' then I18n.t(:label_bad)
+      else
+        rating.to_s
+      end
+    end
+
+    def rating_css_class(rating)
+      case rating
+      when 'good', 'Хорошо' then 'good'
+      when 'okay', 'Нормально' then 'okay'
+      when 'bad', 'Плохо' then 'bad'
+      else
+        'unknown'
+      end
+    end
+
+    def feedback_comment_for(issue)
+      comment_custom_field_id = Setting.plugin_redmine_feedback['feedback_comment_custom_field_id']
+      if comment_custom_field_id.present?
+        comment_value = issue.custom_values.detect { |value| value.custom_field_id.to_s == comment_custom_field_id.to_s }
+        return comment_value.value if comment_value&.value.present?
+      end
+
+      Feedback.find_by(issue_id: issue.id)&.vote_comment
+    end
+
+    def decorate_rating_field_script(issue, feedback_field_id, rating)
+      comment = feedback_comment_for(issue).to_s.squish
+      title = comment.present? ? "#{I18n.t(:label_comment)}: #{comment}" : ''
+      selector = ".cf_#{feedback_field_id.to_i} .value"
+
+      script = <<~JAVASCRIPT
+        document.addEventListener('DOMContentLoaded', function() {
+          var ratingValue = document.querySelector(#{selector.to_json});
+          if (!ratingValue) return;
+
+          ratingValue.textContent = #{rating_text_for(rating).to_json};
+          ratingValue.classList.add('feedback-rating-field', 'feedback-#{rating_css_class(rating)}');
+
+          if (#{comment.present?.to_json}) {
+            ratingValue.setAttribute('title', #{title.to_json});
+            ratingValue.setAttribute('data-feedback-tooltip', 'true');
+          }
+        });
+      JAVASCRIPT
+
+      javascript_tag(script)
     end
   end
 end

@@ -11,6 +11,18 @@
   text-decoration: underline dotted;
 }
 
+.feedback-rating-field {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.feedback-rating-field[data-feedback-tooltip] {
+  cursor: help;
+  text-decoration: underline dotted;
+}
+
 .feedback-good {
   background-color: #e6ffe6;
   color: #2c6e2c;
