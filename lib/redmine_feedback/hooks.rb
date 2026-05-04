@@ -106,7 +106,9 @@ module RedmineFeedback
           if (#{comment.present?.to_json}) {
             ratingValue.setAttribute('title', #{title.to_json});
             ratingValue.setAttribute('data-feedback-tooltip', 'true');
-            ratingValue.setAttribute('data-feedback-tooltip-text', #{title.to_json});
+            if (typeof initFeedbackTooltips === 'function') {
+              initFeedbackTooltips();
+            }
           }
         }());
       JAVASCRIPT

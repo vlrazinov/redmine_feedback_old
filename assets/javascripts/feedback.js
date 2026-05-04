@@ -10,3 +10,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+
+function initFeedbackTooltips() {
+  if (window.jQuery && jQuery.fn.tooltip) {
+    jQuery('.feedback-rating-field[title], .feedback-rating[title]').tooltip({
+      show: {
+        delay: 400
+      },
+      position: {
+        my: 'center bottom-5',
+        at: 'center top'
+      }
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initFeedbackTooltips);
