@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initFeedbackTooltips() {
   if (window.jQuery && jQuery.fn.tooltip) {
-    jQuery('.feedback-rating-field[title], .feedback-rating[title]').tooltip({
+    jQuery('.feedback-rating-field[title], .feedback-rating[title], .label[data-feedback-tooltip][title]').tooltip({
       show: {
         delay: 400
       },

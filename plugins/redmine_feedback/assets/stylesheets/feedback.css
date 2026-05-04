@@ -23,6 +23,10 @@
   text-decoration: underline dotted;
 }
 
+.label[data-feedback-tooltip] {
+  cursor: help;
+}
+
 .feedback-good {
   background-color: #e6ffe6;
   color: #2c6e2c;
