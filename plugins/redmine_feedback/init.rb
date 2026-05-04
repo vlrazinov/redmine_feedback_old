@@ -31,6 +31,15 @@ $redmine_feedback_initialized = false
 
 # Инициализируем поля после подготовки окружения
 Rails.configuration.to_prepare do
+  require_dependency 'redmine_feedback/hooks'
+  require_dependency 'redmine_feedback/issue_patch'
+  require_dependency 'redmine_feedback/issue_query_patch'
+  require_dependency 'redmine_feedback/queries_helper_patch'
+
+  Issue.include RedmineFeedback::IssuePatch unless Issue.included_modules.include?(RedmineFeedback::IssuePatch)
+  IssueQuery.include RedmineFeedback::IssueQueryPatch unless IssueQuery.included_modules.include?(RedmineFeedback::IssueQueryPatch)
+  QueriesHelper.include RedmineFeedback::QueriesHelperPatch unless QueriesHelper.included_modules.include?(RedmineFeedback::QueriesHelperPatch)
+
   unless $redmine_feedback_initialized
     # Создаём поля только один раз при загрузке приложения
     begin

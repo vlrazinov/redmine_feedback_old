@@ -1,6 +1,9 @@
 module FeedbackHelper
   def rating_text_for(value)
     case value
+    when Feedback::VOTE_AWESOME, Feedback::VOTE_AWESOME.to_s then 'Хорошо'
+    when Feedback::VOTE_JUSTOK, Feedback::VOTE_JUSTOK.to_s then 'Нормально'
+    when Feedback::VOTE_NOTGOOD, Feedback::VOTE_NOTGOOD.to_s then 'Плохо'
     when 'Хорошо', 'good' then 'Хорошо'
     when 'Нормально', 'okay' then 'Нормально'
     when 'Плохо', 'bad' then 'Плохо'

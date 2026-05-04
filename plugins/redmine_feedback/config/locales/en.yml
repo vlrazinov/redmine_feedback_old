@@ -6,6 +6,7 @@ en:
   label_feedback_link_error: "Error: feedback link is not available."
   label_feedback_title: "Support Feedback"
   label_feedback_rating: "Your rating"
+  label_feedback_comment: "Support feedback comment"
   label_good: "Good"
   label_okay: "Okay"
   label_bad: "Bad"

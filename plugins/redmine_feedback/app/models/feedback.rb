@@ -10,7 +10,10 @@ class Feedback < ApplicationRecord
   RATING_VALUES = {
     'good' => 'Хорошо',
     'okay' => 'Нормально',
-    'bad' => 'Плохо'
+    'bad' => 'Плохо',
+    VOTE_AWESOME.to_s => 'Хорошо',
+    VOTE_JUSTOK.to_s => 'Нормально',
+    VOTE_NOTGOOD.to_s => 'Плохо'
   }.freeze
 
   VOTE_VALUES = {

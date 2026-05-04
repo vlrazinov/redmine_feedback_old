@@ -27,14 +27,15 @@ module RedmineFeedback
       issue = context[:issue]
       return '' unless issue
       
-      feedback_field_id = Setting.plugin_redmine_feedback['feedback_custom_field_id']
-      return '' unless feedback_field_id
-      
-      custom_value = issue.custom_value_for(feedback_field_id)
-      rating = custom_value&.value
+      feedback = Feedback.find_by(issue_id: issue.id)
+      rating = feedback&.vote || feedback_rating_custom_value(issue)
       return '' unless rating.present?
-      
-      decorate_rating_field_script(issue, feedback_field_id, rating)
+
+      issue_fields_rows do |rows|
+        rows.right I18n.t(:label_feedback_title),
+                   rating_html(issue, rating),
+                   class: 'feedback support-rating'
+      end
     end
 
     private
@@ -61,6 +62,9 @@ module RedmineFeedback
 
     def rating_text_for(rating)
       case rating
+      when Feedback::VOTE_AWESOME, Feedback::VOTE_AWESOME.to_s then I18n.t(:label_good)
+      when Feedback::VOTE_JUSTOK, Feedback::VOTE_JUSTOK.to_s then I18n.t(:label_okay)
+      when Feedback::VOTE_NOTGOOD, Feedback::VOTE_NOTGOOD.to_s then I18n.t(:label_bad)
       when 'good', 'Хорошо' then I18n.t(:label_good)
       when 'okay', 'Нормально' then I18n.t(:label_okay)
       when 'bad', 'Плохо' then I18n.t(:label_bad)
@@ -71,6 +75,9 @@ module RedmineFeedback
 
     def rating_css_class(rating)
       case rating
+      when Feedback::VOTE_AWESOME, Feedback::VOTE_AWESOME.to_s then 'good'
+      when Feedback::VOTE_JUSTOK, Feedback::VOTE_JUSTOK.to_s then 'okay'
+      when Feedback::VOTE_NOTGOOD, Feedback::VOTE_NOTGOOD.to_s then 'bad'
       when 'good', 'Хорошо' then 'good'
       when 'okay', 'Нормально' then 'okay'
       when 'bad', 'Плохо' then 'bad'
@@ -89,38 +96,11 @@ module RedmineFeedback
       Feedback.find_by(issue_id: issue.id)&.vote_comment
     end
 
-    def decorate_rating_field_script(issue, feedback_field_id, rating)
-      comment = feedback_comment_for(issue).to_s.squish
-      title = comment.present? ? "#{I18n.t(:label_comment)}: #{comment}" : ''
-      value_selector = ".cf_#{feedback_field_id.to_i} .value"
-      label_selector = ".cf_#{feedback_field_id.to_i} .label"
+    def feedback_rating_custom_value(issue)
+      feedback_field_id = Setting.plugin_redmine_feedback['feedback_custom_field_id']
+      return unless feedback_field_id.present?
 
-      script = <<~JAVASCRIPT
-        (function decorateFeedbackRating() {
-          var ratingValue = document.querySelector(#{value_selector.to_json});
-          if (!ratingValue) return;
-
-          ratingValue.textContent = #{rating_text_for(rating).to_json};
-          ratingValue.classList.add('feedback-rating-field', 'feedback-#{rating_css_class(rating)}');
-
-          if (#{comment.present?.to_json}) {
-            ratingValue.setAttribute('title', #{title.to_json});
-            ratingValue.setAttribute('data-feedback-tooltip', 'true');
-
-            var ratingLabel = document.querySelector(#{label_selector.to_json});
-            if (ratingLabel) {
-              ratingLabel.setAttribute('title', #{title.to_json});
-              ratingLabel.setAttribute('data-feedback-tooltip', 'true');
-            }
-
-            if (typeof initFeedbackTooltips === 'function') {
-              initFeedbackTooltips();
-            }
-          }
-        }());
-      JAVASCRIPT
-
-      javascript_tag(script)
+      issue.custom_value_for(feedback_field_id)&.value
     end
   end
 end

@@ -4,6 +4,7 @@ ru:
   label_feedback_link_error: "Ссылка для оценки доступна только в задачах"
   label_feedback_title: "Оценка поддержки"
   label_feedback_rating: "Ваша оценка"
+  label_feedback_comment: "Комментарий к оценке поддержки"
   label_good: "Хорошо"
   label_okay: "Нормально"
   label_bad: "Плохо"
