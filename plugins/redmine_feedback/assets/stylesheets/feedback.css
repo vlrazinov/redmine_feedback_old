@@ -16,11 +16,44 @@
   padding: 2px 8px;
   border-radius: 4px;
   font-weight: bold;
+  position: relative;
 }
 
 .feedback-rating-field[data-feedback-tooltip] {
   cursor: help;
   text-decoration: underline dotted;
+}
+
+.feedback-rating-field[data-feedback-tooltip]:hover::after,
+.feedback-rating-field[data-feedback-tooltip]:focus::after {
+  content: attr(data-feedback-tooltip-text);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 10000;
+  box-sizing: border-box;
+  min-width: 180px;
+  max-width: 360px;
+  padding: 6px 8px;
+  background: #333;
+  color: #fff;
+  border-radius: 3px;
+  font-weight: normal;
+  line-height: 1.4;
+  text-decoration: none;
+  white-space: pre-wrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.feedback-rating-field[data-feedback-tooltip]:hover::before,
+.feedback-rating-field[data-feedback-tooltip]:focus::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  bottom: calc(100% + 3px);
+  z-index: 10001;
+  border: 5px solid transparent;
+  border-top-color: #333;
 }
 
 .feedback-good {

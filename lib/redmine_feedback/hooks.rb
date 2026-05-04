@@ -96,7 +96,7 @@ module RedmineFeedback
       selector = ".cf_#{feedback_field_id.to_i} .value"
 
       script = <<~JAVASCRIPT
-        document.addEventListener('DOMContentLoaded', function() {
+        (function decorateFeedbackRating() {
           var ratingValue = document.querySelector(#{selector.to_json});
           if (!ratingValue) return;
 
@@ -106,8 +106,9 @@ module RedmineFeedback
           if (#{comment.present?.to_json}) {
             ratingValue.setAttribute('title', #{title.to_json});
             ratingValue.setAttribute('data-feedback-tooltip', 'true');
+            ratingValue.setAttribute('data-feedback-tooltip-text', #{title.to_json});
           }
-        });
+        }());
       JAVASCRIPT
 
       javascript_tag(script)
