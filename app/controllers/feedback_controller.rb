@@ -37,69 +37,42 @@ class FeedbackController < ApplicationController
     @issue = Issue.find_by(id: params[:id])
     token = params[:token]
 
-    expected_token = Digest::SHA1.hexdigest("#{@issue.id}-#{@issue.created_on}-#{Redmine::Configuration['secret_token']}")
+    if @issue.nil?
+      render_404
+      return
+    end
 
-    if @issue.nil? || token != expected_token
+    expected_token = Digest::SHA1.hexdigest("#{@issue.id}-#{@issue.created_on}-#{Redmine::Configuration['secret_token']}")
+    if token != expected_token
       render_404
       return
     end
 
     rating = params[:rating]
-    comment = params[:comment]
+    comment = params[:comment].to_s
+    rating_value = Feedback.rating_value_for(rating)
+    vote_value = Feedback.vote_value_for(rating)
 
-    # Сохраняем русское название напрямую
-    rating_value = case rating
-                  when 'good' then 'Хорошо'
-                  when 'okay' then 'Нормально'
-                  when 'bad' then 'Плохо'
-                  else rating
-                  end
-
-    custom_field_id = Setting.plugin_redmine_feedback['feedback_custom_field_id']
-    if custom_field_id.present? && rating.present?
-      custom_value = @issue.custom_values.detect { |v| v.custom_field_id == custom_field_id.to_i }
-      if custom_value.nil?
-        custom_value = CustomValue.new(
-          customized: @issue,
-          custom_field_id: custom_field_id,
-          value: rating_value
-        )
-        custom_value.save
-      else
-        custom_value.value = rating_value
-        custom_value.save
-      end
+    custom_field_values = {}
+    rating_custom_field_id = Setting.plugin_redmine_feedback['feedback_custom_field_id']
+    if rating_custom_field_id.present? && rating.present?
+      custom_field_values[rating_custom_field_id.to_s] = rating_value
     end
 
-    # Сохраняем комментарий в custom field
     comment_custom_field_id = Setting.plugin_redmine_feedback['feedback_comment_custom_field_id']
-    if comment_custom_field_id.present? && comment.present?
-      comment_custom_value = @issue.custom_values.detect { |v| v.custom_field_id == comment_custom_field_id.to_i }
-      if comment_custom_value.nil?
-        comment_custom_value = CustomValue.new(
-          customized: @issue,
-          custom_field_id: comment_custom_field_id,
-          value: comment
-        )
-        comment_custom_value.save
-      else
-        comment_custom_value.value = comment
-        comment_custom_value.save
-      end
+    if comment_custom_field_id.present?
+      custom_field_values[comment_custom_field_id.to_s] = comment
+    end
+
+    if custom_field_values.any?
+      @issue.init_journal(User.current)
+      @issue.custom_field_values = custom_field_values
+      @issue.save!
     end
 
     # Сохраняем голос и комментарий через модель Feedback
     feedback = Feedback.find_or_initialize_by(issue_id: @issue.id)
-
-    # Преобразуем rating в числовое значение vote
-    vote_value = case rating
-                 when 'good' then Feedback::VOTE_AWESOME
-                 when 'okay' then Feedback::VOTE_JUSTOK
-                 when 'bad' then Feedback::VOTE_NOTGOOD
-                 else nil
-                 end
-
-    feedback.update_vote!(vote_value, comment.present? ? comment : nil)
+    feedback.update_vote!(vote_value, comment.presence)
 
     flash[:notice] = 'Спасибо! Ваша оценка сохранена.'
     redirect_to feedback_vote_path(@issue.id, token: token)

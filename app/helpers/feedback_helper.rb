@@ -20,18 +20,19 @@ module FeedbackHelper
     
     return '-' unless rating_value.present?
 
-    # Получаем комментарий из таблицы feedbacks (поле vote_comment)
-    feedback = Feedback.find_by(issue_id: issue.id)
-    comment = feedback&.vote_comment
+    comment_custom_field_id = Setting.plugin_redmine_feedback['feedback_comment_custom_field_id']
+    comment = if comment_custom_field_id.present?
+                issue.custom_value_for(comment_custom_field_id)&.value
+              end
+    comment ||= Feedback.find_by(issue_id: issue.id)&.vote_comment
 
     text = rating_text_for(rating_value)
     
     if comment.present?
-      # Экранируем специальные символы для атрибута title
-      escaped_comment = comment.to_s.gsub('"', '&quot;').gsub("\n", ' ').gsub("\r", '')
-      content_tag(:span, text, 
-                  title: escaped_comment, 
-                  style: "text-decoration: underline dotted; cursor: help; border-bottom: 1px dotted #999;")
+      content_tag(:span, text,
+                  title: comment.to_s.squish,
+                  class: 'feedback-rating',
+                  data: { feedback_tooltip: true })
     else
       text
     end
