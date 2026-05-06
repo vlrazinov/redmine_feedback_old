@@ -1,7 +1,7 @@
 class FeedbackController < ApplicationController
   skip_before_action :check_if_login_required, only: [:vote, :submit]
   layout 'base'
-
+  
   def vote
     @issue = Issue.find_by(id: params[:id])
     token = params[:token]
@@ -11,7 +11,14 @@ class FeedbackController < ApplicationController
       return
     end
 
-    expected_token = Digest::SHA1.hexdigest("#{@issue.id}-#{@issue.created_on}-#{Redmine::Configuration['secret_token']}")
+    secret_token = Redmine::Configuration['secret_token']
+    if secret_token.blank?
+      Rails.logger.error "[Redmine Feedback] secret_token is not configured"
+      render_404
+      return
+    end
+
+    expected_token = Digest::SHA1.hexdigest("#{@issue.id}-#{@issue.created_on}-#{secret_token}")
 
     if token != expected_token
       render_404
@@ -42,7 +49,14 @@ class FeedbackController < ApplicationController
       return
     end
 
-    expected_token = Digest::SHA1.hexdigest("#{@issue.id}-#{@issue.created_on}-#{Redmine::Configuration['secret_token']}")
+    secret_token = Redmine::Configuration['secret_token']
+    if secret_token.blank?
+      Rails.logger.error "[Redmine Feedback] secret_token is not configured"
+      render_404
+      return
+    end
+
+    expected_token = Digest::SHA1.hexdigest("#{@issue.id}-#{@issue.created_on}-#{secret_token}")
     if token != expected_token
       render_404
       return
@@ -67,14 +81,24 @@ class FeedbackController < ApplicationController
     if custom_field_values.any?
       @issue.init_journal(User.current)
       @issue.custom_field_values = custom_field_values
-      @issue.save!
+      unless @issue.save
+        Rails.logger.error "[Redmine Feedback] Failed to save issue #{@issue.id}: #{@issue.errors.full_messages.join(', ')}"
+        flash[:error] = I18n.t(:notice_failed_to_save_issue)
+        redirect_to feedback_vote_path(@issue.id, token: token)
+        return
+      end
     end
 
     # Сохраняем голос и комментарий через модель Feedback
-    feedback = Feedback.find_or_initialize_by(issue_id: @issue.id)
-    feedback.update_vote!(vote_value, comment.presence)
-
-    flash[:notice] = 'Спасибо! Ваша оценка сохранена.'
+    begin
+      feedback = Feedback.find_or_initialize_by(issue_id: @issue.id)
+      feedback.update_vote!(vote_value, comment.presence)
+      flash[:notice] = I18n.t(:notice_feedback_submitted)
+    rescue => e
+      Rails.logger.error "[Redmine Feedback] Error saving feedback for issue #{@issue.id}: #{e.message}"
+      flash[:error] = I18n.t(:notice_failed_to_save_feedback)
+    end
+    
     redirect_to feedback_vote_path(@issue.id, token: token)
   end
 end
