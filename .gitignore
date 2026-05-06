@@ -4,18 +4,22 @@
 __pycache__/
 *.o
 *.obj
+*.class
 *.so
 *.dll
 *.exe
-*.class
 *.out
 
 # Dependencies
 .venv/
 venv/
 node_modules/
-.bundle/
-vendor/bundle/
+pip-wheel-metadata/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage/
+htmlcov/
 
 # Logs and temp files
 *.log
@@ -38,14 +42,9 @@ vendor/bundle/
 .DS_Store
 Thumbs.db
 
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
 # Build systems
-build/
 dist/
+build/
 target/
 .gradle/
 ```

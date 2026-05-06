@@ -16,14 +16,27 @@ module RedmineFeedback
       # Если поле уже настроено, проверяем существует ли оно
       if field_id.present?
         existing_field = IssueCustomField.find_by(id: field_id)
-        if existing_field && existing_field.name == 'Оценка поддержки'
+        if existing_field && (existing_field.name == 'Оценка поддержки' || existing_field.name == 'Обратная связь')
           configure_feedback_field!(existing_field)
           return
         end
       end
       
-      # Ищем поле по имени
+      # Ищем поле по имени (старое или новое)
       existing_field = IssueCustomField.find_by(name: 'Оценка поддержки')
+      if existing_field
+        # Переименовываем поле
+        existing_field.name = 'Обратная связь'
+        existing_field.save!
+        configure_feedback_field!(existing_field)
+        Setting.plugin_redmine_feedback = Setting.plugin_redmine_feedback.merge(
+          'feedback_custom_field_id' => existing_field.id.to_s
+        )
+        return
+      end
+      
+      # Ищем новое поле
+      existing_field = IssueCustomField.find_by(name: 'Обратная связь')
       if existing_field
         configure_feedback_field!(existing_field)
         Setting.plugin_redmine_feedback = Setting.plugin_redmine_feedback.merge(
@@ -37,7 +50,7 @@ module RedmineFeedback
       return if tracker_ids.empty?
       
       field = IssueCustomField.create!(
-        name: 'Оценка поддержки',
+        name: 'Обратная связь',
         field_format: 'list',
         possible_values: RATING_VALUES,
         is_for_all: true,
@@ -60,14 +73,27 @@ module RedmineFeedback
       # Если поле уже настроено, проверяем существует ли оно
       if field_id.present?
         existing_field = IssueCustomField.find_by(id: field_id)
-        if existing_field && existing_field.name == 'Комментарий к оценке поддержки'
+        if existing_field && (existing_field.name == 'Комментарий к оценке поддержки' || existing_field.name == 'Комментарий к обратной связи')
           configure_feedback_comment_field!(existing_field)
           return
         end
       end
       
-      # Ищем поле по имени
+      # Ищем поле по имени (старое или новое)
       existing_field = IssueCustomField.find_by(name: 'Комментарий к оценке поддержки')
+      if existing_field
+        # Переименовываем поле
+        existing_field.name = 'Комментарий к обратной связи'
+        existing_field.save!
+        configure_feedback_comment_field!(existing_field)
+        Setting.plugin_redmine_feedback = Setting.plugin_redmine_feedback.merge(
+          'feedback_comment_custom_field_id' => existing_field.id.to_s
+        )
+        return
+      end
+      
+      # Ищем новое поле
+      existing_field = IssueCustomField.find_by(name: 'Комментарий к обратной связи')
       if existing_field
         configure_feedback_comment_field!(existing_field)
         Setting.plugin_redmine_feedback = Setting.plugin_redmine_feedback.merge(
@@ -81,7 +107,7 @@ module RedmineFeedback
       return if tracker_ids.empty?
       
       field = IssueCustomField.create!(
-        name: 'Комментарий к оценке поддержки',
+        name: 'Комментарий к обратной связи',
         field_format: 'text',
         is_for_all: true,
         is_filter: true,
