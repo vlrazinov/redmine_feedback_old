@@ -29,3 +29,5 @@ en:
   notice_feedback_field_created: "Field successfully created"
   notice_feedback_field_exists: "Field already exists"
   label_view: "View"
+  notice_failed_to_save_issue: "Failed to save issue"
+  notice_failed_to_save_feedback: "Failed to save feedback"

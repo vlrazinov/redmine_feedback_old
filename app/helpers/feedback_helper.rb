@@ -1,16 +1,16 @@
 module FeedbackHelper
   def rating_text_for(value)
     case value
-    when Feedback::VOTE_AWESOME, Feedback::VOTE_AWESOME.to_s then 'Хорошо'
-    when Feedback::VOTE_JUSTOK, Feedback::VOTE_JUSTOK.to_s then 'Нормально'
-    when Feedback::VOTE_NOTGOOD, Feedback::VOTE_NOTGOOD.to_s then 'Плохо'
-    when 'Хорошо', 'good' then 'Хорошо'
-    when 'Нормально', 'okay' then 'Нормально'
-    when 'Плохо', 'bad' then 'Плохо'
+    when Feedback::VOTE_AWESOME, Feedback::VOTE_AWESOME.to_s then I18n.t(:label_good)
+    when Feedback::VOTE_JUSTOK, Feedback::VOTE_JUSTOK.to_s then I18n.t(:label_okay)
+    when Feedback::VOTE_NOTGOOD, Feedback::VOTE_NOTGOOD.to_s then I18n.t(:label_bad)
+    when 'good', 'Хорошо' then I18n.t(:label_good)
+    when 'okay', 'Нормально' then I18n.t(:label_okay)
+    when 'bad', 'Плохо' then I18n.t(:label_bad)
     else value.to_s
     end
   end
-
+  
   # Форматирует значение оценки, добавляя комментарий в title (всплывающую подсказку)
   # Возвращает HTML с подчеркнутым текстом и tooltip при наличии комментария
   def format_feedback_with_tooltip(issue)
@@ -33,7 +33,7 @@ module FeedbackHelper
     
     if comment.present?
       content_tag(:span, text,
-                  title: comment.to_s.squish,
+                  title: ERB::Util.html_escape(comment.to_s.squish),
                   class: 'feedback-rating',
                   data: { feedback_tooltip: true })
     else

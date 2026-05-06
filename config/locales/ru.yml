@@ -25,3 +25,5 @@ ru:
   button_save: "Сохранить"
   text_resubmit_warning: "Вы можете отправить новую оценку – она заменит предыдущую."
   notice_feedback_new: "Пожалуйста, оцените качество поддержки."
+  notice_failed_to_save_issue: "Не удалось сохранить задачу"
+  notice_failed_to_save_feedback: "Не удалось сохранить оценку"

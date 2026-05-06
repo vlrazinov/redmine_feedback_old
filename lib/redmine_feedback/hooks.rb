@@ -48,7 +48,7 @@ module RedmineFeedback
       css_class = "feedback-rating feedback-#{rating_css_class(rating)}"
 
       if comment.present?
-        tooltip = "#{I18n.t(:label_comment)}: #{comment.to_s.squish}"
+        tooltip = "#{I18n.t(:label_comment)}: #{ERB::Util.html_escape(comment.to_s.squish)}"
         tag_options = {
           class: css_class,
           title: tooltip,

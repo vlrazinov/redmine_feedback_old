@@ -9,19 +9,25 @@ Redmine::WikiFormatting::Macros.register do
     if obj.is_a?(Issue)
       issue = obj
     elsif obj.is_a?(Journal)
-      issue = obj.issue if obj.issue.is_a?(Issue)
-      issue ||= obj.journalized if obj.journalized.is_a?(Issue)
+      issue = obj.journalized if obj.respond_to?(:journalized) && obj.journalized.is_a?(Issue)
+      issue ||= obj.issue if obj.respond_to?(:issue) && obj.issue.is_a?(Issue)
     elsif obj.respond_to?(:issue) && obj.issue.is_a?(Issue)
       issue = obj.issue
     end
     
     if issue && issue.is_a?(Issue)
-      token = Digest::SHA1.hexdigest("#{issue.id}-#{issue.created_on}-#{Redmine::Configuration['secret_token']}")
+      secret_token = Redmine::Configuration['secret_token']
+      if secret_token.blank?
+        Rails.logger.error "[Redmine Feedback] secret_token is not configured"
+        return I18n.t(:label_feedback_link_error)
+      end
+      
+      token = Digest::SHA1.hexdigest("#{issue.id}-#{issue.created_on}-#{secret_token}")
       url = "#{Setting.protocol}://#{Setting.host_name}/feedback/#{issue.id}/vote?token=#{token}"
-      link_text = Setting.plugin_redmine_feedback['feedback_link_text'] || 'Оценить поддержку'
+      link_text = Setting.plugin_redmine_feedback['feedback_link_text'] || I18n.t(:label_feedback_link_text)
       "<a href='#{url}' class='feedback-link' target='_blank'>#{link_text}</a>".html_safe
     else
-      "Ссылка для оценки доступна только в задачах"
+      I18n.t(:label_feedback_link_error)
     end
   end
 end

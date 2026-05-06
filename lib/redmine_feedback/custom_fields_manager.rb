@@ -1,6 +1,6 @@
 module RedmineFeedback
   class CustomFieldsManager
-    RATING_VALUES = ['Хорошо', 'Нормально', 'Плохо'].freeze
+    RATING_VALUES = %w[Хорошо Нормально Плохо].freeze
 
     # Вызывается при инициализации плагина для создания и привязки полей
     def self.ensure_custom_fields_exist!
@@ -32,7 +32,10 @@ module RedmineFeedback
         return
       end
       
-      # Создаём новое поле
+      # Создаём новое поле только если есть трекеры
+      tracker_ids = Tracker.pluck(:id)
+      return if tracker_ids.empty?
+      
       field = IssueCustomField.create!(
         name: 'Оценка поддержки',
         field_format: 'list',
@@ -41,7 +44,7 @@ module RedmineFeedback
         is_filter: true,
         editable: true,
         visible: true,
-        trackers: Tracker.all
+        trackers: Tracker.where(id: tracker_ids)
       )
       
       Setting.plugin_redmine_feedback = Setting.plugin_redmine_feedback.merge(
@@ -73,7 +76,10 @@ module RedmineFeedback
         return
       end
       
-      # Создаём новое поле
+      # Создаём новое поле только если есть трекеры
+      tracker_ids = Tracker.pluck(:id)
+      return if tracker_ids.empty?
+      
       field = IssueCustomField.create!(
         name: 'Комментарий к оценке поддержки',
         field_format: 'text',
@@ -81,7 +87,7 @@ module RedmineFeedback
         is_filter: true,
         editable: true,
         visible: true,
-        trackers: Tracker.all
+        trackers: Tracker.where(id: tracker_ids)
       )
       
       Setting.plugin_redmine_feedback = Setting.plugin_redmine_feedback.merge(
@@ -92,25 +98,51 @@ module RedmineFeedback
     end
 
     def self.configure_feedback_field!(field)
-      tracker_ids = field.tracker_ids.sort
       all_tracker_ids = Tracker.pluck(:id).sort
-      field.field_format = 'list'
-      field.possible_values = RATING_VALUES
-      field.is_filter = true
-      field.is_for_all = true
-      field.visible = true
-      field.trackers = Tracker.all if tracker_ids != all_tracker_ids
-      field.save! if field.changed? || tracker_ids != all_tracker_ids
+      tracker_ids = field.tracker_ids.sort
+      
+      needs_update = false
+      
+      if field.field_format != 'list' || field.possible_values != RATING_VALUES
+        field.field_format = 'list'
+        field.possible_values = RATING_VALUES
+        needs_update = true
+      end
+      
+      unless field.is_filter && field.is_for_all && field.visible
+        field.is_filter = true
+        field.is_for_all = true
+        field.visible = true
+        needs_update = true
+      end
+      
+      if tracker_ids != all_tracker_ids
+        field.trackers = Tracker.where(id: all_tracker_ids)
+        needs_update = true
+      end
+      
+      field.save! if needs_update && field.changed?
     end
 
     def self.configure_feedback_comment_field!(field)
-      tracker_ids = field.tracker_ids.sort
       all_tracker_ids = Tracker.pluck(:id).sort
-      field.is_filter = true
-      field.is_for_all = true
-      field.visible = true
-      field.trackers = Tracker.all if tracker_ids != all_tracker_ids
-      field.save! if field.changed? || tracker_ids != all_tracker_ids
+      tracker_ids = field.tracker_ids.sort
+      
+      needs_update = false
+      
+      unless field.is_filter && field.is_for_all && field.visible
+        field.is_filter = true
+        field.is_for_all = true
+        field.visible = true
+        needs_update = true
+      end
+      
+      if tracker_ids != all_tracker_ids
+        field.trackers = Tracker.where(id: all_tracker_ids)
+        needs_update = true
+      end
+      
+      field.save! if needs_update && field.changed?
     end
   end
 end

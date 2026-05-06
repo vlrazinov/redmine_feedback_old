@@ -1,19 +1,20 @@
 class Feedback < ApplicationRecord
   belongs_to :issue
   validates :issue_id, presence: true
+  validates :issue_id, uniqueness: { message: 'Feedback already exists for this issue' }
   
   # Vote constants
   VOTE_NOTGOOD = 0
   VOTE_JUSTOK = 1
   VOTE_AWESOME = 2
-
+  
   RATING_VALUES = {
-    'good' => 'Хорошо',
-    'okay' => 'Нормально',
-    'bad' => 'Плохо',
-    VOTE_AWESOME.to_s => 'Хорошо',
-    VOTE_JUSTOK.to_s => 'Нормально',
-    VOTE_NOTGOOD.to_s => 'Плохо'
+    'good' => I18n.t(:label_good),
+    'okay' => I18n.t(:label_okay),
+    'bad' => I18n.t(:label_bad),
+    VOTE_AWESOME.to_s => I18n.t(:label_good),
+    VOTE_JUSTOK.to_s => I18n.t(:label_okay),
+    VOTE_NOTGOOD.to_s => I18n.t(:label_bad)
   }.freeze
 
   VOTE_VALUES = {
@@ -55,6 +56,11 @@ class Feedback < ApplicationRecord
   # Обновление голоса с комментарием. История пользовательских полей задачи
   # ведется стандартным журналом Redmine при сохранении Issue.
   def update_vote!(new_vote, comment = nil)
-    update!(vote: new_vote, vote_comment: comment)
+    transaction do
+      update!(vote: new_vote, vote_comment: comment)
+    end
+  rescue ActiveRecord::RecordNotUnique => e
+    Rails.logger.error "[Redmine Feedback] Race condition detected while saving feedback for issue #{issue_id}: #{e.message}"
+    raise
   end
 end
