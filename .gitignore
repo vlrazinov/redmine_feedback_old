@@ -4,8 +4,8 @@
 __pycache__/
 *.o
 *.obj
-*.class
 *.so
+*.a
 *.dll
 *.exe
 *.out
@@ -14,23 +14,25 @@ __pycache__/
 .venv/
 venv/
 node_modules/
-pip-wheel-metadata/
-.mypy_cache/
-.pytest_cache/
-.coverage
-coverage/
-htmlcov/
+.bundle/
+vendor/bundle/
+target/
+.build/
+*.gem
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
 *.swo
+*.bak
+*.~
+*~
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
 # Editors
 .vscode/
@@ -38,13 +40,42 @@ htmlcov/
 *.swp
 *.swo
 
-# OS specific
+# OS generated files
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Build systems
-dist/
-build/
-target/
-.gradle/
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Testing
+.rspec_cache/
+.mypy_cache/
+.pytest_cache/
+
+# Compression files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 ```

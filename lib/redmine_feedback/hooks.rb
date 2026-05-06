@@ -20,7 +20,9 @@ module RedmineFeedback
       custom_value = issue.custom_values.detect { |v| v.custom_field_id.to_s == feedback_field_id.to_s }
       return '' unless custom_value.present?
       
-      rating_html(issue, custom_value.value)
+      rating = custom_value.value
+      comment = feedback_comment_for(issue)
+      show_customer_vote(rating, comment)
     end
     
     def view_issues_show_details_bottom(context = {})
@@ -33,59 +35,12 @@ module RedmineFeedback
 
       issue_fields_rows do |rows|
         rows.right I18n.t(:label_feedback_title),
-                   rating_html(issue, rating),
+                   show_customer_vote(rating, feedback_comment_for(issue)),
                    class: 'feedback support-rating'
       end
     end
 
     private
-
-    def rating_html(issue, rating)
-      return ''.html_safe unless rating.present?
-
-      rating_text = rating_text_for(rating)
-      comment = feedback_comment_for(issue)
-      css_class = "feedback-rating feedback-#{rating_css_class(rating)}"
-
-      if comment.present?
-        tooltip = "#{I18n.t(:label_comment)}: #{ERB::Util.html_escape(comment.to_s.squish)}"
-        tag_options = {
-          class: css_class,
-          title: tooltip,
-          data: { feedback_tooltip: true }
-        }
-      else
-        tag_options = { class: css_class }
-      end
-
-      content_tag(:span, rating_text, tag_options)
-    end
-
-    def rating_text_for(rating)
-      case rating
-      when Feedback::VOTE_AWESOME, Feedback::VOTE_AWESOME.to_s then I18n.t(:label_good)
-      when Feedback::VOTE_JUSTOK, Feedback::VOTE_JUSTOK.to_s then I18n.t(:label_okay)
-      when Feedback::VOTE_NOTGOOD, Feedback::VOTE_NOTGOOD.to_s then I18n.t(:label_bad)
-      when 'good', 'Хорошо' then I18n.t(:label_good)
-      when 'okay', 'Нормально' then I18n.t(:label_okay)
-      when 'bad', 'Плохо' then I18n.t(:label_bad)
-      else
-        rating.to_s
-      end
-    end
-
-    def rating_css_class(rating)
-      case rating
-      when Feedback::VOTE_AWESOME, Feedback::VOTE_AWESOME.to_s then 'good'
-      when Feedback::VOTE_JUSTOK, Feedback::VOTE_JUSTOK.to_s then 'okay'
-      when Feedback::VOTE_NOTGOOD, Feedback::VOTE_NOTGOOD.to_s then 'bad'
-      when 'good', 'Хорошо' then 'good'
-      when 'okay', 'Нормально' then 'okay'
-      when 'bad', 'Плохо' then 'bad'
-      else
-        'unknown'
-      end
-    end
 
     def feedback_comment_for(issue)
       comment_custom_field_id = Setting.plugin_redmine_feedback['feedback_comment_custom_field_id']

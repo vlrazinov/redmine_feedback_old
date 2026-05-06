@@ -40,4 +40,28 @@ module FeedbackHelper
       text
     end
   end
+  
+  # Отображает оценку с комментарием в виде всплывающей подсказки (tooltip)
+  # Идентично реализации в helpdesk_votes (show_customer_vote)
+  # vote - значение оценки, title - текст комментария для tooltip
+  def show_customer_vote(vote, title = nil)
+    return ''.html_safe unless vote.present?
+    
+    vote_text = case vote.to_i
+                when Feedback::VOTE_AWESOME then I18n.t(:label_good)
+                when Feedback::VOTE_JUSTOK then I18n.t(:label_okay)
+                when Feedback::VOTE_NOTGOOD then I18n.t(:label_bad)
+                else vote.to_s
+                end
+    
+    if title.present?
+      # Создаем span с атрибутом title для tooltip (идентично helpdesk_votes)
+      content_tag(:span, vote_text,
+                  title: ERB::Util.html_escape(title.to_s.squish),
+                  class: 'feedback-rating',
+                  data: { feedback_tooltip: true })
+    else
+      vote_text
+    end
+  end
 end
