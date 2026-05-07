@@ -34,9 +34,9 @@ end
 
 Redmine::Plugin.register :redmine_feedback do
   name 'Redmine Feedback plugin'
-  author 'Vladislav Razinov'
-  description 'Adds universal feedback/voting mechanism for any issue type.'
-  version '1.0.1'
+  author 'Vladislav Razinov, Valeriy Popov'
+  description 'Adds universal feedback/voting mechanism for any issue type. Powered by AI.'
+  version '1.1'
   
   permission :view_feedback, { :feedback => [:vote] }, :public => true
   permission :submit_feedback, { :feedback => [:submit] }, :public => true
@@ -44,7 +44,7 @@ Redmine::Plugin.register :redmine_feedback do
   settings :default => { 
     'feedback_custom_field_id' => nil,
     'feedback_comment_custom_field_id' => nil,
-    'feedback_link_text' => 'Оценить поддержку'
+    'feedback_link_text' => 'Оцените качество технической поддержки'
   }, :partial => 'settings/feedback_settings'
 end
 
